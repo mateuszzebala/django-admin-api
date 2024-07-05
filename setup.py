@@ -4,15 +4,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="django_admin_api",
+    name="django_admin_page_api",
     version="1.0.0",
     author="Mateusz Zębala",
     author_email="mateusz.zebala.pl@gmail.com",
-    description="Django Admin API",
+    description="Django Admin Page API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/mateuszzebala/django-admin-api",
-    packages=["django_admin_api"],
+    url="https://github.com/mateuszzebala/django-admin-page-api",
+    packages=["django_admin_page_api"],
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
