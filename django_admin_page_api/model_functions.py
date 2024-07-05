@@ -4,6 +4,9 @@ from django.contrib import admin
 from django.db import models
 from .utils import *
 
+def get_all_models():
+    return [model for model, adminModel in admin.site._registry.items()]
+
 def get_model_by_name(app: str, model_name: str):
     for model, adminModel in admin.site._registry.items():
         if model_name == str(model.__name__):

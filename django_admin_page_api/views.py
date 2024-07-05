@@ -8,7 +8,10 @@ from django.contrib.sessions.models import Session
 from django.db.models import Q
 
 def index(request):
-    return JsonResponse({})
+    models = get_all_models()
+    return JsonResponse({
+        'models': [get_model_json(model) for model in models]
+    })
 
 def signin(request):
     username = request.POST.get('username')
