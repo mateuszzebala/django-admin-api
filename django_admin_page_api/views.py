@@ -6,6 +6,37 @@ from .utils import *
 from django.contrib.auth import login, logout , authenticate
 from django.contrib.sessions.models import Session
 from django.db.models import Q
+from django.contrib.auth.models import Permission
+import enum
+
+def not_permitted():
+    return JsonResponse({'message': 'You do not have permision to do this action!'})
+
+class Actions(enum.Enum):
+    VIEW = 'view'
+    ADD = 'add'
+    CHANGE = 'change'
+    DELETE = 'delete'
+
+def have_permission(request, admin_model, action):
+    if not request.user.is_authenticated: return False
+    if request.user.is_superuser: return True
+    
+    if action == Actions.VIEW:
+        return admin_model.has_view_permission(request) 
+    
+    if action == Actions.ADD:
+        return admin_model.has_add_permission(request) 
+    
+    if action == Actions.CHANGE:
+        return admin_model.has_change_permission(request) 
+    
+    if action == Actions.DELETE:
+        return admin_model.has_delete_permission(request) 
+    
+    return False
+    
+    
 
 def index(request):
     models = get_all_models()
@@ -39,17 +70,23 @@ class ModelView(View):
     def get(self, request, app_label, model_name):
         
         model = get_model_by_name(app_label, model_name)
+        admin_model = get_admin_model_by_name(app_label, model_name)
         
-        return JsonResponse({
-            'model': get_model_json(model)
-        })
+        if have_permission(request, admin_model, Actions.VIEW):
+            return JsonResponse({
+                'model': get_model_json(model)
+            })
+        else: return not_permitted()
         
     def post(self, request, app_label, model_name):
         
         model = get_model_by_name(app_label, model_name)
+        admin_model =get_admin_model_by_name(app_label, model_name)
 
-        item = create_new_item(model, request.POST, request.FILES)
-        return JsonResponse({'item': item_to_json(item)})
+        if have_permission(request, admin_model, Actions.ADD):
+            item = create_new_item(model, request.POST, request.FILES)
+            return JsonResponse({'item': item_to_json(item)})
+        else: return not_permitted()
         
         
 
@@ -62,6 +99,9 @@ class ItemsView(View):
     
     def get(self, request, app_label, model_name):
         model = get_model_by_name(app_label, model_name)
+        admin_model =get_admin_model_by_name(app_label, model_name)
+        
+        if not have_permission(request, admin_model, Actions.VIEW): return not_permitted()
         
         limit = int(request.GET.get('limit') or 100)
         offset = int(request.GET.get('offset') or 0)
@@ -96,6 +136,8 @@ class ItemsView(View):
 
     def delete(self, request, app_label, model_name):
         model = get_model_by_name(app_label, model_name)
+        admin_model = get_admin_model_by_name(app_label, model_name)
+        if not have_permission(request, admin_model, Actions.DELETE): return not_permitted()
         keys = convert_comma_array(request.GET.get('keys'))
         model.objects.filter(pk__in=keys).delete()
         return JsonResponse({'message': 'Items deleted succesfully!'})
@@ -110,6 +152,8 @@ class ItemView(View):
     
     def get(self, request, app_label, model_name, pk):
         model = get_model_by_name(app_label, model_name)
+        admin_model = get_admin_model_by_name(app_label, model_name)
+        if not have_permission(request, admin_model, Actions.VIEW): return not_permitted()
         item = model.objects.filter(pk=pk).first()
         
         if item is None:
@@ -122,6 +166,8 @@ class ItemView(View):
     def put(self, request, app_label, model_name, pk):
         
         model = get_model_by_name(app_label, model_name)
+        admin_model = get_admin_model_by_name(app_label, model_name)
+        if not have_permission(request, admin_model, Actions.CHANGE): return not_permitted()
         item = model.objects.filter(pk=pk).first()
         
         if item is None:
@@ -133,6 +179,8 @@ class ItemView(View):
         
     def delete(self, request, app_label, model_name, pk):
         model = get_model_by_name(app_label, model_name)
+        admin_model = get_admin_model_by_name(app_label, model_name)
+        if not have_permission(request, admin_model, Actions.DELETE): return not_permitted()
         item = model.objects.filter(pk=pk).first()
         
         if item is None:
@@ -141,7 +189,10 @@ class ItemView(View):
         return JsonResponse({'message': 'Item deleted succesfully!'})
 
 def autocomplete(request, app_label, model_name, pk, field_name):
+    
     model = get_model_by_name(app_label, model_name)
+    admin_model = get_admin_model_by_name(app_label, model_name)
+    if not have_permission(request, admin_model, Actions.VIEW): return not_permitted()
     
     item = model.objects.filter(pk=pk).first()
     item_field_value = getattr(item, field_name)
@@ -193,6 +244,7 @@ def autocomplete(request, app_label, model_name, pk, field_name):
     })
     
 def info(request):
+    
     if not request.user.is_authenticated:
         return JsonResponse({'message': 'You are not authenticated!'})
     

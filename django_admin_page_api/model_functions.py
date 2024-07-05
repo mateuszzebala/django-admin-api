@@ -12,6 +12,12 @@ def get_model_by_name(app: str, model_name: str):
         if model_name == str(model.__name__):
             if app == model._meta.app_label:
                 return model
+            
+def get_admin_model_by_name(app: str, model_name: str):
+    for model, adminModel in admin.site._registry.items():
+        if model_name == str(model.__name__):
+            if app == model._meta.app_label:
+                return adminModel
 
 def get_fields_of_model(model):
     return [field for field in model._meta.get_fields() if field.editable]
