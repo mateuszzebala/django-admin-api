@@ -3,9 +3,10 @@ import datetime
 from django.contrib import admin
 from django.db import models
 from .utils import *
+import enum
 
 def get_all_models():
-    return [model for model, adminModel in admin.site._registry.items()]
+    return admin.site._registry.items()
 
 def get_model_by_name(app: str, model_name: str):
     for model, adminModel in admin.site._registry.items():
@@ -33,9 +34,9 @@ def get_app_json(app):
 def get_model_json(model):
     is_registered = admin.site._registry.get(model) is not None
     return {
-        'is_registered': is_registered,
         'model_name': model.__name__,
         'app': get_app_json(model._meta.app_config),
+        'is_registered': is_registered,
         'list_display': admin.site._registry.get(model).list_display if is_registered else ['__str__'],
         'fields': [get_field_json(field) for field in get_fields_of_model(model)]
     }
@@ -164,9 +165,44 @@ def update_item(model, item, post, files):
     
     return item    
 
+
+def get_model_permission_json(admin_model, request):
+    return {
+        'add': admin_model.has_add_permission(request),
+        'change': admin_model.has_change_permission(request),
+        'delete': admin_model.has_delete_permission(request),
+        'view': admin_model.has_view_permission(request),
+    }
+    
+def add_permission_json_to_model(model_json, admin_model, request):
+    model_json['permissions'] = get_model_permission_json(admin_model, request)
+    return model_json
+
 def create_new_item(model, post, files):
     item = model()
     item = update_item(model, post, files)
     return item
 
+class Actions(enum.Enum):
+    VIEW = 'view'
+    ADD = 'add'
+    CHANGE = 'change'
+    DELETE = 'delete'
+
+def have_permission(request, admin_model, action):
+    if not request.user.is_authenticated: return False
+    if request.user.is_superuser: return True
     
+    if action == Actions.VIEW:
+        return admin_model.has_view_permission(request) 
+    
+    if action == Actions.ADD:
+        return admin_model.has_add_permission(request) 
+    
+    if action == Actions.CHANGE:
+        return admin_model.has_change_permission(request) 
+    
+    if action == Actions.DELETE:
+        return admin_model.has_delete_permission(request) 
+    
+    return False

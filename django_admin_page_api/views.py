@@ -7,41 +7,14 @@ from django.contrib.auth import login, logout , authenticate
 from django.contrib.sessions.models import Session
 from django.db.models import Q
 from django.contrib.auth.models import Permission
-import enum
 
 def not_permitted():
     return JsonResponse({'message': 'You do not have permision to do this action!'})
 
-class Actions(enum.Enum):
-    VIEW = 'view'
-    ADD = 'add'
-    CHANGE = 'change'
-    DELETE = 'delete'
-
-def have_permission(request, admin_model, action):
-    if not request.user.is_authenticated: return False
-    if request.user.is_superuser: return True
-    
-    if action == Actions.VIEW:
-        return admin_model.has_view_permission(request) 
-    
-    if action == Actions.ADD:
-        return admin_model.has_add_permission(request) 
-    
-    if action == Actions.CHANGE:
-        return admin_model.has_change_permission(request) 
-    
-    if action == Actions.DELETE:
-        return admin_model.has_delete_permission(request) 
-    
-    return False
-    
-    
-
 def index(request):
-    models = get_all_models()
+    models: list[tuple] = get_all_models()
     return JsonResponse({
-        'models': [get_model_json(model) for model in models]
+        'models': [add_permission_json_to_model(get_model_json(model), admin_model, request) for model, admin_model in models]
     })
 
 def signin(request):
@@ -74,8 +47,9 @@ class ModelView(View):
         
         if have_permission(request, admin_model, Actions.VIEW):
             return JsonResponse({
-                'model': get_model_json(model)
+                'model': add_permission_json_to_model(get_model_json(model), admin_model, request)
             })
+            
         else: return not_permitted()
         
     def post(self, request, app_label, model_name):
