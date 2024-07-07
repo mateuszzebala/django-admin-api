@@ -12,20 +12,23 @@ def not_permitted():
     return JsonResponse({'message': 'You do not have permision to do this action!'})
 
 def index(request):
+    
+    if (not request.user.is_authenticated or not request.user.is_staff) and not request.user.is_superuser: return not_permitted()
+    
     models: list[tuple] = get_all_models()
     return JsonResponse({
         'models': [add_permission_json_to_model(get_model_json(model), admin_model, request) for model, admin_model in models]
     })
 
 def signin(request):
-    username = request.POST.get('username')
-    password = request.POST.get('password')
+    username = request.POST.get('username') or request.GET.get('username')
+    password = request.POST.get('password') or request.GET.get('password')
     
     user = authenticate(username=username, password=password)
     
     if user is not None:
         login(request, user)
-        return JsonResponse({'message': 'Authentication Successfull!'})
+        return JsonResponse({'message': 'Authentication Successfull!', 'sessionid': request.session.session_key})
     else:
         return JsonResponse({'message': 'Authentication Failed!'})
     
