@@ -85,10 +85,11 @@ INSTALLED_APPS = [
 
 - GET - Fetch current user and session data
 
+## `/admin-api/csrf`
 
+- GET - Fetch csrf token 
 
+## `/admin-api/logs`
 
-
-
-
+- GET - Fetch logs of authenticated user
 

@@ -10,13 +10,13 @@ def get_all_models():
 
 def get_model_by_name(app: str, model_name: str):
     for model, adminModel in admin.site._registry.items():
-        if model_name == str(model.__name__):
+        if model_name.lower() == str(model.__name__).lower():
             if app == model._meta.app_label:
                 return model
             
 def get_admin_model_by_name(app: str, model_name: str):
     for model, adminModel in admin.site._registry.items():
-        if model_name == str(model.__name__):
+        if model_name.lower() == str(model.__name__).lower():
             if app == model._meta.app_label:
                 return adminModel
 

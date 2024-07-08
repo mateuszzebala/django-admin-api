@@ -6,10 +6,13 @@ from .utils import *
 from django.contrib.auth import login, logout , authenticate
 from django.contrib.sessions.models import Session
 from django.db.models import Q
-from django.contrib.auth.models import Permission
+from django.contrib.admin.models import LogEntry
+from django.middleware.csrf import get_token
 
 def not_permitted():
-    return JsonResponse({'message': 'You do not have permision to do this action!'})
+    response = JsonResponse({'message': 'You do not have permision to do this action!'})
+    response.status_code = 403
+    return response
 
 def index(request):
     
@@ -18,7 +21,7 @@ def index(request):
     models: list[tuple] = get_all_models()
     return JsonResponse({
         'models': [add_permission_json_to_model(get_model_json(model), admin_model, request) for model, admin_model in models]
-    })
+    })  
 
 def signin(request):
     username = request.POST.get('username') or request.GET.get('username')
@@ -231,3 +234,26 @@ def info(request):
         'user': item_to_json(request.user)['fields'],
         'session': item_to_json(session)['fields']
     })
+
+def logs(request):
+    if (not request.user.is_authenticated or not request.user.is_staff) and not request.user.is_superuser: return not_permitted() 
+    logs = LogEntry.objects.filter(user=request.user)
+    return JsonResponse({
+        'logs': [{
+            'action': ['Add', 'Change', 'Delete',][log.action_flag - 1],
+            'action_time': log.action_time,
+            'change_message': json.loads(log.change_message) if log.change_message else [],
+            'model': {
+                'name': log.content_type.model_class().__name__,
+                'app_label': log.content_type.app_label
+            },
+            'user': item_to_json(log.user)['fields']
+        } for log in logs]
+    })
+
+def csrf(request):
+    return JsonResponse({
+        'token': get_token(request)
+    })
+    
+    
