@@ -207,7 +207,7 @@ def autocomplete(request, app_label, model_name, pk, field_name):
         queryError = True
         all_items = related_model.objects.all()
     
-    if not field.many_to_many and field.requires_unique_target: 
+    if field.requires_unique_target: 
         all_items = all_items.filter(Q(**{f'{field.remote_field.name}__isnull': True}) | Q(pk=item_field_value.pk if item_field_value is not None else None))
         
     items = all_items.order_by(sort)
