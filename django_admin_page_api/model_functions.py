@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.db import models
 from .utils import *
 import enum
+import json 
 
 def get_all_models():
     return admin.site._registry.items()
@@ -81,7 +82,13 @@ def serialize_field_to_json(value: any, type: str):
     if type == 'IntegerField':
         return int(value)
     if type == 'FileField':
+        if not value:
+            return {
+                'value': False
+            }
+        
         return {
+            'value': True,
             'name': value.name, 
             'path': value.path, 
             'size': value.size, 
@@ -89,6 +96,7 @@ def serialize_field_to_json(value: any, type: str):
             'filename': os.path.basename(value.path),
             'extension': None if not '.' in os.path.basename(value.path) else os.path.basename(value.path).split('.')[-1]
         }
+
     if type in ['DateField', 'TimeField', 'DateTimeField']:
         return value
     if type in ['FloatField', 'DecimalField']:
@@ -105,6 +113,8 @@ def serialize_field_to_json(value: any, type: str):
             'app_label': value.model._meta.app_label, 
             'items': [item.pk for item in value.all()]
         }
+    if type == 'JSONField':
+        return json.dumps(value) if value else ''
     return None
 
 def item_to_json(item):
