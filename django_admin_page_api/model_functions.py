@@ -134,7 +134,7 @@ def set_item_field(item, field, value: any, type: str):
     if type in ['FileField']:
         setattr(item, field.name, value)
     if type in ['BooleanField']:
-        setattr(item, field.name, True if value == 'true' else False if value is not None else None)
+        setattr(item, field.name, True if value == 'true' else False if value == 'false' else None)
     if type in ['DateField', 'TimeField', 'DateTimeField']:
         if type == 'DateField':
             setattr(item, field.name, datetime.date.fromisoformat(value))

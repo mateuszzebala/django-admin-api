@@ -8,11 +8,32 @@ from django.contrib.sessions.models import Session
 from django.db.models import Q
 from django.contrib.admin.models import LogEntry
 from django.middleware.csrf import get_token
+from functools import wraps
+from django.http import QueryDict, JsonResponse
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.utils.encoding import force_str
 
 def not_permitted():
     response = JsonResponse({'message': 'You do not have permision to do this action!'})
     response.status_code = 403
     return response
+
+def put_data(func):
+    def wrapper(self, request, *args, **kwargs):
+        request.PUT = QueryDict('', mutable=True)
+        
+        if request.content_type == "application/x-www-form-urlencoded":
+            request.PUT = QueryDict(force_str(request.body, encoding='utf-8'))
+        elif request.content_type.startswith("multipart/form-data"):
+            form_data, files = parse_multipart_data(request)
+            request.PUT = form_data
+            request.FILES.update(files)
+        else:
+            request.PUT = QueryDict('')
+        
+        return func(self, request, *args, **kwargs)
+    return wrapper
 
 def index(request):
     
@@ -129,7 +150,8 @@ class ItemView(View):
         "put",
         "delete",
     ]
-    
+
+
     def get(self, request, app_label, model_name, pk):
         model = get_model_by_name(app_label, model_name)
         admin_model = get_admin_model_by_name(app_label, model_name)
@@ -142,7 +164,8 @@ class ItemView(View):
         return JsonResponse({
             'item': item_to_json(item)
         })
-        
+    
+    @put_data
     def put(self, request, app_label, model_name, pk):
         
         model = get_model_by_name(app_label, model_name)
@@ -153,7 +176,7 @@ class ItemView(View):
         if item is None:
             return JsonResponse({ 'message': 'Item not found!', })
         
-        item = update_item(model, item, request.POST, request.FILES)
+        item = update_item(model, item, request.PUT, request.FILES)
 
         return JsonResponse({'item': item_to_json(item)})
         
@@ -216,10 +239,6 @@ def autocomplete(request, app_label, model_name, pk, field_name):
     
     if not asc:
         items = items.reverse() 
-
-    [
-        {"pk": item.pk, "__str__": str(item)} for item in items
-    ]
 
     return JsonResponse({
         'field': get_field_json(field),
