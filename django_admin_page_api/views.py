@@ -217,9 +217,15 @@ def autocomplete(request, app_label, model_name, pk, field_name):
     if not asc:
         items = items.reverse() 
 
+    [
+        {"pk": item.pk, "__str__": str(item)} for item in items
+    ]
+
     return JsonResponse({
         'field': get_field_json(field),
-        'possible_values': dict((item.pk, str(item)) for item in items),
+        'possible_values': [
+            {"pk": item.pk, "__str__": str(item)} for item in items
+        ],
         'queryError': queryError
     })
     

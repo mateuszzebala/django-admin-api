@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="django_admin_page_api",
-    version="1.0.8",
+    version="1.0.9",
     author="Mateusz Zębala",
     author_email="mateusz.zebala.pl@gmail.com",
     description="Django Admin Page API",
