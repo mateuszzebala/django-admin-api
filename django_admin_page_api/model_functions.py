@@ -156,8 +156,12 @@ def update_item(model, item, post, files):
             continue
         
         if field.get_internal_type() == 'FileField':
-            if files.get(field.name) is None and not field.blank:
-                if not getattr(item, field.name): raise Exception(f"File for '{field.name}' not sent!")
+            print(field.name, files.get(field.name))
+            if files.get(field.name) is None:
+                if not getattr(item, field.name) and field.blank:
+                    set_item_field(item, field, None, field.get_internal_type())
+                elif not getattr(item, field.name):
+                    raise Exception(f"File for '{field.name}' not sent!")
             else: set_item_field(item, field, files.get(field.name), field.get_internal_type())
         else:
             if post.get(field.name) is None and not field.blank:

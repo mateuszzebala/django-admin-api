@@ -6,7 +6,7 @@
 
 Run a command:
 
-```bash 
+```bash
 pip install django-admin-page-api
 ```
 
@@ -36,46 +36,49 @@ INSTALLED_APPS = [
 
 # Endpoints
 
-
 ## `/admin-api/`
 
 - GET - Fetch list of models available in django admin
 
 ## `/admin-api/<app_label>/<model_name>`
 
-- GET - Fetch model info 
+- GET - Fetch model info
 
-- POST - Create new instance of model
+- POST - Create new instance of model (FormData)
 
-## `/admin-api/<app_label>/<model_name>/items` 
+## `/admin-api/<app_label>/<model_name>/items`
 
-- GET - List of items 
-    - Search params:
-        - offset
-        - limit
-        - query
-        - sort
-        - asc
+- GET - List of items
+  - Search params:
+    - offset
+    - limit
+    - query
+    - sort
+    - asc
 - DELETE - Delete items
-    - Request body:
-        - keys - list of primary keys to delete (mey be separated by commas)
+  - Request body:
+    - keys - list of primary keys to delete (mey be separated by commas)
 
-## `/admin-api/<app_label>/<model_name>/<pk>` 
+## `/admin-api/<app_label>/<model_name>/<pk>`
+
 - GET - Fetch item data
-- PUT - Update instance of the object and save
+- PUT - Update instance of the object and save (FormData)
 - DELETE - Delete item
 
 ## `/admin-api/<app_label>/<model_name>/<pk>/<field_name>/`
+
 - GET - get possible value to relation
-    - Search params:
-        - offset
-        - limit
-        - query
-        - sort
-        - asc
+  - Search params:
+    - offset
+    - limit
+    - query
+    - sort
+    - asc
 
 ## `/admin-api/signin`
-- Request body:
+
+- POST - sign in (FormData)
+  - Request body:
     - username
     - password
 
@@ -87,9 +90,8 @@ INSTALLED_APPS = [
 
 ## `/admin-api/csrf`
 
-- GET - Fetch csrf token 
+- GET - Fetch csrf token
 
 ## `/admin-api/logs`
 
 - GET - Fetch logs of authenticated user
-
