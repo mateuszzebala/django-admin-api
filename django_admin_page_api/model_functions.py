@@ -143,10 +143,12 @@ def set_item_field(item, field, value: any, type: str):
         elif type == 'DateTimeField':
             setattr(item, field.name, datetime.datetime.fromisoformat(value))
     if type in ['OneToOneField', 'ForeignKey']:
-        setattr(item, field.name, field.related_model.objects.filter(pk=value).first())
+        if value: setattr(item, field.name, field.related_model.objects.filter(pk=value).first())
+        else: setattr(item, field.name, None)
     if type in ['ManyToManyField']:
         keys = convert_comma_array(value)
-        getattr(item, field.name).set(field.related_model.objects.filter(pk__in=keys))
+        if len(keys): getattr(item, field.name).set(field.related_model.objects.filter(pk__in=keys))
+        else: getattr(item, field.name).clear()
 
 def update_item(model, item, post, files):
     for field in get_fields_of_model(model):
