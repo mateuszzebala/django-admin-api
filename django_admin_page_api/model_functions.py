@@ -20,6 +20,9 @@ def get_admin_model_by_name(app: str, model_name: str):
         if model_name.lower() == str(model.__name__).lower():
             if app == model._meta.app_label:
                 return adminModel
+            
+def get_model_with_admin(app: str, model_name: str):
+    return get_model_by_name(app, model_name), get_admin_model_by_name(app, model_name)
 
 def get_fields_of_model(model):
     return [field for field in model._meta.get_fields() if field.editable]
@@ -150,36 +153,53 @@ def set_item_field(item, field, value: any, type: str):
         if len(keys): getattr(item, field.name).set(field.related_model.objects.filter(pk__in=keys))
         else: getattr(item, field.name).clear()
 
+class UpadateException(Exception):
+    ...
+
 def update_item(model, item, post, files):
+
+    errors = []
+
     for field in get_fields_of_model(model):
-        if field.get_internal_type() == 'ManyToManyField':
-            continue
-        
-        if field.get_internal_type() == 'FileField':
-            print(field.name, files.get(field.name))
-            if files.get(field.name) is None:
-                if not getattr(item, field.name) and field.blank:
-                    set_item_field(item, field, None, field.get_internal_type())
-                elif not getattr(item, field.name):
-                    raise Exception(f"File for '{field.name}' not sent!")
-            else: set_item_field(item, field, files.get(field.name), field.get_internal_type())
-        else:
-            if post.get(field.name) is None and not field.blank:
-                raise Exception(f"Value for '{field.name}' not sent!")
-            else: set_item_field(item, field, post.get(field.name), field.get_internal_type())
+        try:
+            if field.get_internal_type() == 'ManyToManyField':
+                continue
+
+            if field.get_internal_type() == 'FileField':
+                
+                print(field.name, files.get(field.name))
+                if files.get(field.name) is None:
+                    if not getattr(item, field.name) and field.blank:
+                        set_item_field(item, field, None, field.get_internal_type())
+                    elif not getattr(item, field.name):
+                        raise UpadateException(f"File for '{field.name}' not sent!")
+                else: set_item_field(item, field, files.get(field.name), field.get_internal_type())
+            else:
+                if post.get(field.name) is None and not field.blank:
+                    raise UpadateException(f"Value for '{field.name}' not sent!")
+                else: set_item_field(item, field, post.get(field.name), field.get_internal_type())
+        except Exception as e: errors.append([field.name, repr(e)])
+
+    try:
+
+        if not len(errors):
+            item.save()
+
+            for field in get_fields_of_model(model):
+                try:
+                    if field.get_internal_type() != 'ManyToManyField':
+                        continue
+                    if post.get(field.name) is None and not field.blank:
+                        raise UpadateException(f"Value for '{field.name}' not sent!")
+                    else: set_item_field(item, field, post.get(field.name), field.get_internal_type())
+                except Exception as e: errors.append([field.name, repr(e)])
+            
+            try: item.save()
+            except Exception as e: errors.append(repr(e))
+
+    except Exception as e: errors.append(repr(e))
     
-    item.save()
-    
-    for field in get_fields_of_model(model):
-        if field.get_internal_type() != 'ManyToManyField':
-            continue
-        if post.get(field.name) is None and not field.blank:
-            raise Exception(f"Value for '{field.name}' not sent!")
-        else: set_item_field(item, field, post.get(field.name), field.get_internal_type())
-    
-    item.save()
-    
-    return item    
+    return item, errors  
 
 
 def get_model_permission_json(admin_model, request):
@@ -196,8 +216,8 @@ def add_permission_json_to_model(model_json, admin_model, request):
 
 def create_new_item(model, post, files):
     item = model()
-    item = update_item(model, post, files)
-    return item
+    item, errors = update_item(model, item, post, files)
+    return item, errors
 
 class Actions(enum.Enum):
     VIEW = 'view'

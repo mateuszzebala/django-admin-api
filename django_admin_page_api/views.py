@@ -69,8 +69,7 @@ class ModelView(View):
 
     def get(self, request, app_label, model_name):
         
-        model = get_model_by_name(app_label, model_name)
-        admin_model = get_admin_model_by_name(app_label, model_name)
+        model, admin_model = get_model_with_admin(app_label, model_name)
         
         if have_permission(request, admin_model, Actions.VIEW):
             return JsonResponse({
@@ -81,12 +80,12 @@ class ModelView(View):
         
     def post(self, request, app_label, model_name):
         
-        model = get_model_by_name(app_label, model_name)
-        admin_model =get_admin_model_by_name(app_label, model_name)
+        model, admin_model = get_model_with_admin(app_label, model_name)
 
         if have_permission(request, admin_model, Actions.ADD):
-            item = create_new_item(model, request.POST, request.FILES)
-            return JsonResponse({'item': item_to_json(item)})
+            item, errors = create_new_item(model, request.POST, request.FILES)
+            return JsonResponse({'item': item_to_json(item) if not len(errors) else None, 'errors': errors})
+        
         else: return not_permitted()
         
         
@@ -176,9 +175,9 @@ class ItemView(View):
         if item is None:
             return JsonResponse({ 'message': 'Item not found!', })
         
-        item = update_item(model, item, request.PUT, request.FILES)
+        item, errors = update_item(model, item, request.PUT, request.FILES)
 
-        return JsonResponse({'item': item_to_json(item)})
+        return JsonResponse({'item': item_to_json(item) if not len(errors) else None, 'errors': errors})
         
     def delete(self, request, app_label, model_name, pk):
         model = get_model_by_name(app_label, model_name)
@@ -191,16 +190,66 @@ class ItemView(View):
 
         return JsonResponse({'message': 'Item deleted succesfully!'})
 
+def autocomplete_new(request, app_label, model_name, field_name):
+    model, admin_model = get_model_with_admin(app_label, model_name)
+    if not have_permission(request, admin_model, Actions.VIEW): return not_permitted()
+
+    field = None
+
+    for fld in model._meta.get_fields():
+        if fld.name == field_name:
+            field = fld
+            break
+    
+    if field is None:
+        return JsonResponse({'message': 'Field not found!'})
+    
+    if not field.is_relation:
+        return JsonResponse({
+            'field': get_field_json(field),
+        })
+    
+    searchQuery = convert_query_object(request.GET.get('query', ''))
+    limit = int(request.GET.get('limit') or 100)
+    offset = int(request.GET.get('offset') or 0)
+    sort = request.GET.get('sort') or 'pk'
+    asc = False if request.GET.get('asc') == 'false' else True
+    queryError = False
+
+    related_model = field.related_model
+    
+    try:
+        all_items = related_model.objects.filter(**searchQuery)
+    except:
+        queryError = True
+        all_items = related_model.objects.all()
+    
+    if not field.many_to_many and field.requires_unique_target: 
+        all_items = all_items.filter(**{f'{field.remote_field.name}__isnull': True})
+        
+    items = all_items.order_by(sort)
+    
+    items = all_items[offset:offset+limit]   
+    
+    if not asc:
+        items = items.reverse() 
+
+    return JsonResponse({
+        'field': get_field_json(field),
+        'possible_values': [
+            {"pk": item.pk, "__str__": str(item)} for item in items
+        ],
+        'queryError': queryError
+    })
+
+
 def autocomplete(request, app_label, model_name, pk, field_name):
     
-    model = get_model_by_name(app_label, model_name)
-    admin_model = get_admin_model_by_name(app_label, model_name)
+    model, admin_model = get_model_with_admin(app_label, model_name)
     if not have_permission(request, admin_model, Actions.VIEW): return not_permitted()
     
     item = model.objects.filter(pk=pk).first()
     item_field_value = getattr(item, field_name)
-    
-    field = None
     
     for fld in model._meta.get_fields():
         if fld.name == field_name:

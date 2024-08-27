@@ -46,6 +46,16 @@ INSTALLED_APPS = [
 
 - POST - Create new instance of model (FormData)
 
+## `/admin-api/<app_label>/<model_name>/<field_name>/autocomplete/`
+
+- GET - get possible value to relation
+  - Search params:
+    - offset
+    - limit
+    - query
+    - sort
+    - asc
+
 ## `/admin-api/<app_label>/<model_name>/items`
 
 - GET - List of items
@@ -65,7 +75,7 @@ INSTALLED_APPS = [
 - PUT - Update instance of the object and save (FormData)
 - DELETE - Delete item
 
-## `/admin-api/<app_label>/<model_name>/<pk>/<field_name>/`
+## `/admin-api/<app_label>/<model_name>/<pk>/<field_name>/autocomplete/`
 
 - GET - get possible value to relation
   - Search params:
