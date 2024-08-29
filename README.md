@@ -34,6 +34,8 @@ INSTALLED_APPS = [
 ]
 ```
 
+### Important: Data should be send using FormData
+
 # Endpoints
 
 ## `/admin-api/`
@@ -50,24 +52,24 @@ INSTALLED_APPS = [
 
 - GET - get possible value to relation
   - Search params:
-    - offset
-    - limit
-    - query
-    - sort
-    - asc
+    - offset: number
+    - limit: number
+    - query: json string - e.g. {"int_field\_\_gt": 1}
+    - sort: string
+    - asc: boolean string
 
 ## `/admin-api/<app_label>/<model_name>/items`
 
 - GET - List of items
   - Search params:
-    - offset
-    - limit
-    - query
-    - sort
-    - asc
+    - offset: number
+    - limit: number
+    - query: json string - e.g. {"int_field\_\_gt": 1}
+    - sort: string
+    - asc: boolean string
 - DELETE - Delete items
-  - Request body:
-    - keys - list of primary keys to delete (mey be separated by commas)
+  - Search params:
+    - keys - list of primary keys to delete (may be separated by commas)
 
 ## `/admin-api/<app_label>/<model_name>/<pk>`
 
@@ -79,18 +81,18 @@ INSTALLED_APPS = [
 
 - GET - get possible value to relation
   - Search params:
-    - offset
-    - limit
-    - query
-    - sort
-    - asc
+    - offset: number
+    - limit: number
+    - query: json string - e.g. {"int_field\_\_gt": 1}
+    - sort: string
+    - asc: boolean string
 
 ## `/admin-api/signin`
 
 - POST - sign in (FormData)
   - Request body:
-    - username
-    - password
+    - username: string
+    - password: string
 
 ## `/admin-api/signout`
 
@@ -105,3 +107,9 @@ INSTALLED_APPS = [
 ## `/admin-api/logs`
 
 - GET - Fetch logs of authenticated user
+
+## `/admin-api/<app_label>/<model_name>/action/<action_code>/`
+
+- POST - run model action
+  - Request body:
+    - keys - list of primary keys to delete (may be separated by commas)

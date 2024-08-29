@@ -42,7 +42,8 @@ def get_model_json(model):
         'app': get_app_json(model._meta.app_config),
         'is_registered': is_registered,
         'list_display': admin.site._registry.get(model).list_display if is_registered else ['__str__'],
-        'fields': [get_field_json(field) for field in get_fields_of_model(model)]
+        'fields': [get_field_json(field) for field in get_fields_of_model(model)],
+        
     }
 
 def get_field_json(field):
@@ -106,9 +107,9 @@ def serialize_field_to_json(value: any, type: str):
         return float(value)
     if type in ['OneToOneField', 'ForeignKey']:
         return {
-            'pk': value.pk, 
-            'model_name': value.__class__.__name__, 
-            'app_label': value.__class__._meta.app_label
+            'pk': value.pk if value is not None else None, 
+            'model_name': value.__class__.__name__ if value else None, 
+            'app_label': value.__class__._meta.app_label if value else None
         }
     if type in ['ManyToManyField']:
         return {
@@ -210,8 +211,9 @@ def get_model_permission_json(admin_model, request):
         'view': admin_model.has_view_permission(request),
     }
     
-def add_permission_json_to_model(model_json, admin_model, request):
+def add_some_json_to_model(model_json, admin_model, request, model):
     model_json['permissions'] = get_model_permission_json(admin_model, request)
+    model_json['actions'] = [(action) for action in admin.site._registry.get(model).get_action_choices(request)]
     return model_json
 
 def create_new_item(model, post, files):
