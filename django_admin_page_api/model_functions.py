@@ -129,30 +129,47 @@ def item_to_json(item):
     }
     
 def set_item_field(item, field, value: any, type: str):
+    if value == '\0': 
+        setattr(item, field.name, None)
+        return
     if type in ['CharField', 'TextField']:
         setattr(item, field.name, str(value))
     if type in ['FloatField', 'DecimalField']:
-        setattr(item, field.name, float(value))
+        try: setattr(item, field.name, float(value))
+        except: ...
     if type in ['IntegerField']:
-        setattr(item, field.name, int(value))
+        try: setattr(item, field.name, int(value))
+        except: ...
     if type in ['FileField']:
         setattr(item, field.name, value)
     if type in ['BooleanField']:
         setattr(item, field.name, True if value == 'true' else False if value == 'false' else None)
     if type in ['DateField', 'TimeField', 'DateTimeField']:
         if type == 'DateField':
-            setattr(item, field.name, datetime.date.fromisoformat(value))
+            try:
+                d = datetime.date.fromisoformat(value)
+                setattr(item, field.name, d)
+            except: setattr(item, field.name, None)
         elif type == 'TimeField':
-            setattr(item, field.name, datetime.time.fromisoformat(value))
+            try:
+                t = datetime.time.fromisoformat(value)
+                setattr(item, field.name, t)
+            except: setattr(item, field.name, None)
         elif type == 'DateTimeField':
-            setattr(item, field.name, datetime.datetime.fromisoformat(value))
+            try:
+                dt = datetime.time.fromisoformat(value)
+                setattr(item, field.name, dt)
+            except: setattr(item, field.name, None)
     if type in ['OneToOneField', 'ForeignKey']:
         if value: setattr(item, field.name, field.related_model.objects.filter(pk=value).first())
         else: setattr(item, field.name, None)
     if type in ['ManyToManyField']:
-        keys = convert_comma_array(value)
-        if len(keys): getattr(item, field.name).set(field.related_model.objects.filter(pk__in=keys))
-        else: getattr(item, field.name).clear()
+        try:
+            keys = convert_comma_array(value)
+            if len(keys): getattr(item, field.name).set(field.related_model.objects.filter(pk__in=keys))
+            else: getattr(item, field.name).clear()
+        except:
+            ...
 
 class UpadateException(Exception):
     ...
