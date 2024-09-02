@@ -142,7 +142,10 @@ class ItemsView(View):
         admin_model = get_admin_model_by_name(app_label, model_name)
         if not have_permission(request, admin_model, Actions.DELETE): return not_permitted()
         keys = convert_comma_array(request.GET.get('keys'))
-        model.objects.filter(pk__in=keys).delete()
+        for key in keys:
+            item = model.objects.filter(pk=key)
+            if item:
+                admin_model.log_deletion(request, item, '')
         return JsonResponse({'message': 'Items deleted succesfully!'})
 
 class ItemView(View):

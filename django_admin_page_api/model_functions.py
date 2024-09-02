@@ -157,7 +157,7 @@ def set_item_field(item, field, value: any, type: str):
             except: setattr(item, field.name, None)
         elif type == 'DateTimeField':
             try:
-                dt = datetime.time.fromisoformat(value)
+                dt = datetime.datetime.fromisoformat(value)
                 setattr(item, field.name, dt)
             except: setattr(item, field.name, None)
     if type in ['OneToOneField', 'ForeignKey']:
