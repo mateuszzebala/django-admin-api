@@ -184,10 +184,10 @@ def update_item(model, item, post, files):
                 continue
 
             if field.get_internal_type() == 'FileField':
-                
-                print(field.name, files.get(field.name))
                 if files.get(field.name) is None:
-                    if not getattr(item, field.name) and field.blank:
+                    if post.get(field.name) == '\0':
+                        set_item_field(item, field, None, field.get_internal_type())
+                    elif not getattr(item, field.name) and field.blank:
                         set_item_field(item, field, None, field.get_internal_type())
                     elif not getattr(item, field.name):
                         raise UpadateException(f"File for '{field.name}' not sent!")
