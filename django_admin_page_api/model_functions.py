@@ -182,10 +182,10 @@ def update_item(model, item, post, files):
         try:
             if field.get_internal_type() == 'ManyToManyField':
                 continue
-
             if field.get_internal_type() == 'FileField':
                 if files.get(field.name) is None:
-                    if post.get(field.name) == '\0':
+                    print(f"{post.get(field.name)=}")
+                    if post.get(field.name) == '\x01':
                         set_item_field(item, field, None, field.get_internal_type())
                     elif not getattr(item, field.name) and field.blank:
                         set_item_field(item, field, None, field.get_internal_type())
