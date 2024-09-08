@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.generic import View
 from .model_functions import *
@@ -8,8 +7,8 @@ from django.contrib.sessions.models import Session
 from django.db.models import Q
 from django.contrib.admin.models import LogEntry
 from django.middleware.csrf import get_token
-from functools import wraps
 from django.http import QueryDict, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.utils.encoding import force_str
@@ -35,6 +34,7 @@ def put_data(func):
         return func(self, request, *args, **kwargs)
     return wrapper
 
+@csrf_exempt
 def index(request):
     
     if (not request.user.is_authenticated or not request.user.is_staff) and not request.user.is_superuser: return not_permitted()
@@ -44,6 +44,7 @@ def index(request):
         'models': [add_some_json_to_model(get_model_json(model), admin_model, request, model) for model, admin_model in models]
     })  
 
+@csrf_exempt
 def signin(request):
     username = request.POST.get('username') or request.GET.get('username')
     password = request.POST.get('password') or request.GET.get('password')
@@ -56,10 +57,12 @@ def signin(request):
     else:
         return JsonResponse({'message': 'Authentication Failed!'})
     
+@csrf_exempt
 def signout(request):
     logout(request)
     return JsonResponse({'message': 'Logout Succesfull!'})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ModelView(View):
     
     http_method_names = [
@@ -93,7 +96,7 @@ class ModelView(View):
         else: return not_permitted()
         
         
-
+@method_decorator(csrf_exempt, name='dispatch')
 class ItemsView(View):
     
     http_method_names = [
@@ -148,6 +151,7 @@ class ItemsView(View):
                 admin_model.log_deletion(request, item, '')
         return JsonResponse({'message': 'Items deleted succesfully!'})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ItemView(View):
     
     http_method_names = [
@@ -200,6 +204,7 @@ class ItemView(View):
 
         return JsonResponse({'message': 'Item deleted succesfully!'})
 
+@csrf_exempt
 def autocomplete_new(request, app_label, model_name, field_name):
     model, admin_model = get_model_with_admin(app_label, model_name)
     if not have_permission(request, admin_model, Actions.VIEW): return not_permitted()
@@ -253,6 +258,7 @@ def autocomplete_new(request, app_label, model_name, field_name):
     })
 
 
+@csrf_exempt
 def autocomplete(request, app_label, model_name, pk, field_name):
     
     model, admin_model = get_model_with_admin(app_label, model_name)
@@ -306,7 +312,8 @@ def autocomplete(request, app_label, model_name, pk, field_name):
         ],
         'queryError': queryError
     })
-    
+
+@csrf_exempt
 def info(request):
     
     if not request.user.is_authenticated:
@@ -319,6 +326,7 @@ def info(request):
         'session': item_to_json(session)['fields']
     })
 
+@csrf_exempt
 def logs(request):
     if (not request.user.is_authenticated or not request.user.is_staff) and not request.user.is_superuser: return not_permitted() 
     logs = LogEntry.objects.filter(user=request.user)
@@ -335,12 +343,13 @@ def logs(request):
         } for log in logs]
     })
 
+@csrf_exempt
 def csrf(request):
     return JsonResponse({
         'token': get_token(request)
     })
     
-
+@csrf_exempt
 def action(request, app_label: str, model_name: str, action_code: str):
 
     if request.method != 'POST':
